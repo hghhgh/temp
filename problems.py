@@ -14,7 +14,7 @@ def color_preprocessing(x_train, x_test):
 
 def loadProblem(problem):
   if problem == 'mnist':
-      batch_size = 96
+      batch_size = 32
       num_classes = 10
       img_rows, img_cols = 28, 28
       (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -29,11 +29,10 @@ def loadProblem(problem):
           input_shape = (img_rows, img_cols, 1)
       x_train = x_train.astype('float32')
       x_test = x_test.astype('float32')
-      x_train, x_test = color_preprocessing(x_train, x_test)
-      # x_train /= 255
-      # x_test /= 255
+      x_train /= 255
+      x_test /= 255
   elif problem == 'cifar10':
-      batch_size = 96
+      batch_size = 32
       num_classes = 10
       img_rows, img_cols = 32, 32
       (x_train, y_train), (x_test, y_test) = cifar10.load_data()
@@ -45,10 +44,6 @@ def loadProblem(problem):
           x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, 3)
           x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, 3)
           input_shape = (img_rows, img_cols, 3)
-      x_train = x_train.astype('float32')
-      x_test = x_test.astype('float32')
-      x_train /= 255
-      x_test /= 255
   elif problem == 'cifar100':
       batch_size = 96
       num_classes = 100
@@ -62,13 +57,12 @@ def loadProblem(problem):
           x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, 3)
           x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, 3)
           input_shape = (img_rows, img_cols, 3)
-      x_train = x_train.astype('float32')
-      x_test = x_test.astype('float32')
-      x_train /= 255
-      x_test /= 255
 
   # convert class vectors to binary class matrices
   y_train = keras.utils.to_categorical(y_train, num_classes)
   y_test = keras.utils.to_categorical(y_test, num_classes)
 
+  if problem != 'mnist':
+    x_train, x_test = color_preprocessing(x_train, x_test)
+        
   return x_train, y_train, x_test, y_test, input_shape, num_classes, batch_size

@@ -6,11 +6,8 @@ from tensorflow.keras.models import Model
 
 from ExpectationLayers import *
 
-optzer = keras.optimizers.SGD(lr=.1, momentum=0.9, nesterov=True)
-# optzer = keras.optimizers.Adadelta(learning_rate=0.001, rho=0.95, epsilon=1e-07, name='Adadelta')
-# optzer = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False)
 
-def net1_expectation_binomial_residual_network(input_shape, classes_num, custom_activation, t4e, stack_n=5): #5
+def net1_expectation_binomial_residual_network(input_shape, classes_num, custom_activation, t4e, stack_n=5):
     l1 = 96
     l2 = 96
     l3 = 96
@@ -24,18 +21,19 @@ def net1_expectation_binomial_residual_network(input_shape, classes_num, custom_
 
         o1 = Activation(custom_activation)(
             Activation('relu')(Activation(keras.activations.tanh)(BatchNormalization(momentum=0.9, epsilon=1e-5)(x))))
-        conv_1 = EConv2D(o_filters, t4e=t4e, kernel_size=(3, 3), strides=stride, padding='same',
+        conv_1 = EConv2D(o_filters, t4e=t4e, kernel_size=(3, 3), strides=stride, padding='same', activation=kb.tanh,
                          kernel_initializer="he_normal",
-                         kernel_regularizer=regularizers.l2(weight_decay), dynamic=True)(o1)
+                         kernel_regularizer=regularizers.l2(weight_decay))(o1)
         o2 = Activation(custom_activation)(Activation('relu')(
             Activation(keras.activations.tanh)(BatchNormalization(momentum=0.9, epsilon=1e-5)(conv_1))))
-        conv_2 = EConv2D(o_filters, t4e=t4e, kernel_size=(3, 3), strides=(1, 1), padding='same',
+        conv_2 = EConv2D(o_filters, t4e=t4e, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=kb.tanh,
                          kernel_initializer="he_normal",
-                         kernel_regularizer=regularizers.l2(weight_decay), dynamic=True)(o2)
+                         kernel_regularizer=regularizers.l2(weight_decay))(o2)
         if increase:
             projection = EConv2D(o_filters, t4e=t4e, kernel_size=(1, 1), strides=(2, 2), padding='same',
+                                 activation=kb.tanh,
                                  kernel_initializer="he_normal",
-                                 kernel_regularizer=regularizers.l2(weight_decay), dynamic=True)(o1)
+                                 kernel_regularizer=regularizers.l2(weight_decay))(o1)
             block = add([conv_2, projection])
         else:
             block = add([conv_2, x])
@@ -44,9 +42,9 @@ def net1_expectation_binomial_residual_network(input_shape, classes_num, custom_
     # build model ( total layers = stack_n * 3 * 2 + 2 )
     # stack_n = 5 by default, total layers = 32
     # input: 32x32x3 output: 32x32x16
-    x = EConv2D(filters=l1, t4e=t4e, kernel_size=(3, 3), strides=(1, 1), padding='same',
+    x = EConv2D(filters=l1, t4e=t4e, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=kb.tanh,
                 kernel_initializer="he_normal",
-                kernel_regularizer=regularizers.l2(weight_decay), dynamic=True)(img_input)
+                kernel_regularizer=regularizers.l2(weight_decay))(img_input)
 
     # input: 32x32x16 output: 32x32x16
     for _ in range(stack_n):
@@ -74,12 +72,14 @@ def net1_expectation_binomial_residual_network(input_shape, classes_num, custom_
 
     resnet = Model(img_input, x)
 
-    resnet.compile(loss='categorical_crossentropy', optimizer=optzer, metrics=['accuracy'])
+    # set optimizer
+    sgd = keras.optimizers.SGD(lr=.1, momentum=0.9, nesterov=True)
+    resnet.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
     return resnet, 'net1_expectation_binomial_residual_network'
 
 
-def net1mnist_expectation_binomial_residual_network(input_shape, classes_num, custom_activation, t4e, stack_n=1):
+def net1mnist_expectation_binomial_residual_network(input_shape, classes_num, custom_activation, t4e, stack_n=5):
     l1 = 16
     l2 = 32
     l3 = 64
@@ -93,18 +93,19 @@ def net1mnist_expectation_binomial_residual_network(input_shape, classes_num, cu
 
         o1 = Activation(custom_activation)(
             Activation('relu')(Activation(keras.activations.tanh)(BatchNormalization(momentum=0.9, epsilon=1e-5)(x))))
-        conv_1 = EConv2D(o_filters, t4e=t4e, kernel_size=(3, 3), strides=stride, padding='same',
+        conv_1 = EConv2D(o_filters, t4e=t4e, kernel_size=(3, 3), strides=stride, padding='same', activation=kb.tanh,
                          kernel_initializer="he_normal",
-                         kernel_regularizer=regularizers.l2(weight_decay), dynamic=True)(o1)
+                         kernel_regularizer=regularizers.l2(weight_decay))(o1)
         o2 = Activation(custom_activation)(Activation('relu')(
             Activation(keras.activations.tanh)(BatchNormalization(momentum=0.9, epsilon=1e-5)(conv_1))))
-        conv_2 = EConv2D(o_filters, t4e=t4e, kernel_size=(3, 3), strides=(1, 1), padding='same',
+        conv_2 = EConv2D(o_filters, t4e=t4e, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=kb.tanh,
                          kernel_initializer="he_normal",
-                         kernel_regularizer=regularizers.l2(weight_decay), dynamic=True)(o2)
+                         kernel_regularizer=regularizers.l2(weight_decay))(o2)
         if increase:
             projection = EConv2D(o_filters, t4e=t4e, kernel_size=(1, 1), strides=(2, 2), padding='same',
+                                 activation=kb.tanh,
                                  kernel_initializer="he_normal",
-                                 kernel_regularizer=regularizers.l2(weight_decay), dynamic=True)(o1)
+                                 kernel_regularizer=regularizers.l2(weight_decay))(o1)
             block = add([conv_2, projection])
         else:
             block = add([conv_2, x])
@@ -113,9 +114,9 @@ def net1mnist_expectation_binomial_residual_network(input_shape, classes_num, cu
     # build model ( total layers = stack_n * 3 * 2 + 2 )
     # stack_n = 5 by default, total layers = 32
     # input: 32x32x3 output: 32x32x16
-    x = EConv2D(filters=l1, t4e=t4e, kernel_size=(3, 3), strides=(1, 1), padding='same',
+    x = EConv2D(filters=l1, t4e=t4e, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=kb.tanh,
                 kernel_initializer="he_normal",
-                kernel_regularizer=regularizers.l2(weight_decay), dynamic=True)(img_input)
+                kernel_regularizer=regularizers.l2(weight_decay))(img_input)
 
     # input: 32x32x16 output: 32x32x16
     for _ in range(stack_n):
@@ -143,6 +144,8 @@ def net1mnist_expectation_binomial_residual_network(input_shape, classes_num, cu
 
     resnet = Model(img_input, x)
 
-    resnet.compile(loss='categorical_crossentropy', optimizer=optzer, metrics=['accuracy'])
+    # set optimizer
+    sgd = keras.optimizers.SGD(lr=.1, momentum=0.9, nesterov=True)
+    resnet.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
     return resnet, 'net1_expectation_binomial_residual_network'

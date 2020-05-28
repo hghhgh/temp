@@ -6,14 +6,65 @@ l1 = 16  # 48
 l2 = 32  # 64
 l3 = 64  # 96
 
-optzer = keras.optimizers.SGD(lr=.1, momentum=0.9, nesterov=True)
-# optzer = keras.optimizers.Adadelta(learning_rate=0.001, rho=0.95, epsilon=1e-07, name='Adadelta')
-# optzer = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False)
 
-def net2_bernoulli_residual_network(input_shape, classes_num, custom_activation, stack_n=5): #5
-    l1 = 96
-    l2 = 96
-    l3 = 96
+# def net1__bernoulli_crossentropy(input_shape, num_classes, custom_activation):
+#     # Building up our CNN
+#     model = Sequential()
+#
+#     # Convolution Layer
+#     model.add(Conv2D(128, kernel_size=(7, 7), kernel_initializer="he_normal", input_shape=input_shape))
+#     model.add(BatchNormalization())
+#     model.add(Activation(keras.activations.tanh))
+#     model.add(Activation(keras.activations.relu))
+#     model.add(Activation(custom_activation))
+#
+#     # Convolution Layer
+#     model.add(Conv2D(128, kernel_size=(7, 7), kernel_initializer="he_normal"))
+#     model.add(BatchNormalization())
+#     model.add(Activation(keras.activations.tanh))
+#     model.add(Activation(keras.activations.relu))
+#     model.add(Activation(custom_activation))
+#
+#     # Convolution Layer
+#     model.add(Conv2D(164, kernel_size=(7, 7), kernel_initializer="he_normal"))
+#     model.add(BatchNormalization())
+#     model.add(Activation(keras.activations.tanh))
+#     model.add(Activation(keras.activations.relu))
+#     model.add(Activation(custom_activation))
+#
+#     # Convolution Layer
+#     model.add(Conv2D(164, kernel_size=(7, 7), kernel_initializer="he_normal"))
+#     model.add(BatchNormalization())
+#     model.add(Activation(keras.activations.tanh))
+#     model.add(Activation(keras.activations.relu))
+#     model.add(Activation(custom_activation))
+#
+#     # Flatten layer
+#     model.add(Flatten())
+#
+#     # Fully connected Layer
+#     model.add(Dense(1640, kernel_initializer="he_normal"))
+#     model.add(Activation(keras.activations.tanh))
+#     model.add(Activation(keras.activations.relu))
+#     model.add(Activation(custom_activation))
+#
+#     # Fully connected Layer
+#     model.add(Dense(num_classes, kernel_initializer="he_normal"))
+#     model.add(Activation(keras.activations.tanh))
+#     model.add(Activation(keras.activations.relu))
+#     model.add(Activation(custom_activation))
+#     model.add(Activation('softmax'))
+#
+#     sgd = keras.optimizers.SGD(lr=.01, momentum=0.9, nesterov=True)
+#     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+#
+#     return model, 'net1__bernoulli_crossentropy'
+
+
+def net2_bernoulli_residual_network(input_shape, classes_num, custom_activation, stack_n=5):
+    l1 = 96  # 48
+    l2 = 96  # 64
+    l3 = 96  # 96
     weight_decay = 1e-4
     img_input = Input(shape=input_shape)
 
@@ -24,16 +75,16 @@ def net2_bernoulli_residual_network(input_shape, classes_num, custom_activation,
 
         o1 = Activation(custom_activation)(
             Activation('relu')(Activation(keras.activations.tanh)(BatchNormalization(momentum=0.9, epsilon=1e-5)(x))))
-        conv_1 = Conv2D(o_filters, kernel_size=(3, 3), strides=stride, padding='same',
+        conv_1 = Conv2D(o_filters, kernel_size=(3, 3), strides=stride, padding='same', activation=kb.tanh,
                         kernel_initializer="he_normal",
                         kernel_regularizer=regularizers.l2(weight_decay))(o1)
         o2 = Activation(custom_activation)(Activation('relu')(
             Activation(keras.activations.tanh)(BatchNormalization(momentum=0.9, epsilon=1e-5)(conv_1))))
-        conv_2 = Conv2D(o_filters, kernel_size=(3, 3), strides=(1, 1), padding='same',
+        conv_2 = Conv2D(o_filters, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=kb.tanh,
                         kernel_initializer="he_normal",
                         kernel_regularizer=regularizers.l2(weight_decay))(o2)
         if increase:
-            projection = Conv2D(o_filters, kernel_size=(1, 1), strides=(2, 2), padding='same',
+            projection = Conv2D(o_filters, kernel_size=(1, 1), strides=(2, 2), padding='same', activation=kb.tanh,
                                 kernel_initializer="he_normal",
                                 kernel_regularizer=regularizers.l2(weight_decay))(o1)
             block = add([conv_2, projection])
@@ -44,7 +95,7 @@ def net2_bernoulli_residual_network(input_shape, classes_num, custom_activation,
     # build model ( total layers = stack_n * 3 * 2 + 2 )
     # stack_n = 5 by default, total layers = 32
     # input: 32x32x3 output: 32x32x16
-    x = Conv2D(filters=l1, kernel_size=(3, 3), strides=(1, 1), padding='same',
+    x = Conv2D(filters=l1, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=kb.tanh,
                kernel_initializer="he_normal",
                kernel_regularizer=regularizers.l2(weight_decay))(img_input)
 
@@ -74,11 +125,14 @@ def net2_bernoulli_residual_network(input_shape, classes_num, custom_activation,
 
     resnet = Model(img_input, x)
 
-    resnet.compile(loss='categorical_crossentropy', optimizer=optzer, metrics=['accuracy'])
+    # set optimizer
+    sgd = keras.optimizers.SGD(lr=.1, momentum=0.9, nesterov=True)
+    resnet.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
     return resnet, 'net2_bernoulli_residual_network'
 
-def net2mnist_bernoulli_residual_network(input_shape, classes_num, custom_activation, stack_n=1):
+
+def net2mnist_bernoulli_residual_network(input_shape, classes_num, custom_activation, stack_n=5):
     l1 = 16  # 48
     l2 = 32  # 64
     l3 = 64  # 96
@@ -92,16 +146,16 @@ def net2mnist_bernoulli_residual_network(input_shape, classes_num, custom_activa
 
         o1 = Activation(custom_activation)(
             Activation('relu')(Activation(keras.activations.tanh)(BatchNormalization(momentum=0.9, epsilon=1e-5)(x))))
-        conv_1 = Conv2D(o_filters, kernel_size=(3, 3), strides=stride, padding='same',
+        conv_1 = Conv2D(o_filters, kernel_size=(3, 3), strides=stride, padding='same', activation=kb.tanh,
                         kernel_initializer="he_normal",
                         kernel_regularizer=regularizers.l2(weight_decay))(o1)
         o2 = Activation(custom_activation)(Activation('relu')(
             Activation(keras.activations.tanh)(BatchNormalization(momentum=0.9, epsilon=1e-5)(conv_1))))
-        conv_2 = Conv2D(o_filters, kernel_size=(3, 3), strides=(1, 1), padding='same', 
+        conv_2 = Conv2D(o_filters, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=kb.tanh,
                         kernel_initializer="he_normal",
                         kernel_regularizer=regularizers.l2(weight_decay))(o2)
         if increase:
-            projection = Conv2D(o_filters, kernel_size=(1, 1), strides=(2, 2), padding='same', 
+            projection = Conv2D(o_filters, kernel_size=(1, 1), strides=(2, 2), padding='same', activation=kb.tanh,
                                 kernel_initializer="he_normal",
                                 kernel_regularizer=regularizers.l2(weight_decay))(o1)
             block = add([conv_2, projection])
@@ -112,7 +166,7 @@ def net2mnist_bernoulli_residual_network(input_shape, classes_num, custom_activa
     # build model ( total layers = stack_n * 3 * 2 + 2 )
     # stack_n = 5 by default, total layers = 32
     # input: 32x32x3 output: 32x32x16
-    x = Conv2D(filters=l1, kernel_size=(3, 3), strides=(1, 1), padding='same',
+    x = Conv2D(filters=l1, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=kb.tanh,
                kernel_initializer="he_normal",
                kernel_regularizer=regularizers.l2(weight_decay))(img_input)
 
@@ -142,7 +196,10 @@ def net2mnist_bernoulli_residual_network(input_shape, classes_num, custom_activa
 
     resnet = Model(img_input, x)
 
-    resnet.compile(loss='categorical_crossentropy', optimizer=optzer, metrics=['accuracy'])
+    # set optimizer
+    sgd = keras.optimizers.SGD(lr=.1, momentum=0.9, nesterov=True)
+    resnet.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
     return resnet, 'net2_bernoulli_residual_network'
+
 
